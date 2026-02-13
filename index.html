@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Planificador de Horarios</title>
+  <style>
+    :root {
+      --rosa-1: #f2849e;
+      --rosa-2: #f6a6b2;
+      --rosa-3: #f9c5d1;
+      --rosa-4: #fbcfe8;
+      --fondo: #fde2e4;
+      --blanco: #ffffff;
+      --gris: #555;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: var(--fondo);
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--rosa-1);
+    }
+
+    .contenedor {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+    }
+
+    .formulario {
+      background: var(--blanco);
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      color: var(--gris);
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 6px;
+      margin-top: 4px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 15px;
+      background-color: var(--rosa-2);
+      border: none;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: var(--rosa-1);
+      color: white;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--blanco);
+      border-radius: 12px;
+      overflow: hidden;
+      table-layout: fixed;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      text-align: center;
+      padding: 4px;
+      height: 30px;
+      font-size: 0.85em;
+      position: relative;
+    }
+
+    th {
+      background-color: var(--rosa-3);
+    }
+
+    .bloque {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      top: 2px;
+      bottom: 2px;
+      color: white;
+      border-radius: 8px;
+      padding: 4px;
+      font-size: 0.8em;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🌸 Planificador de Horarios 🌸</h1>
+
+<div class="contenedor">
+
+  <div class="formulario">
+    <h3>Cargar materia</h3>
+
+    <label>Materia</label>
+    <input id="materia" />
+
+    <label>Días (Ctrl para elegir varios)</label>
+    <select id="dias" multiple>
+      <option value="1">Lunes</option>
+      <option value="2">Martes</option>
+      <option value="3">Miércoles</option>
+      <option value="4">Jueves</option>
+      <option value="5">Viernes</option>
+    </select>
+
+    <label>Hora inicio (24h)</label>
+    <input type="time" id="inicio" />
+
+    <label>Hora fin (24h)</label>
+    <input type="time" id="fin" />
+
+    <label>Profesor/a</label>
+    <input id="profe" />
+
+    <label>Modalidad</label>
+    <select id="modalidad">
+      <option>Presencial</option>
+      <option>Virtual</option>
+      <option>Mixta</option>
+    </select>
+
+    <button onclick="agregarMateria()">Agregar</button>
+  </div>
+
+  <table id="horario">
+    <tr>
+      <th>Hora</th>
+      <th>Lunes</th>
+      <th>Martes</th>
+      <th>Miércoles</th>
+      <th>Jueves</th>
+      <th>Viernes</th>
+    </tr>
+  </table>
+
+</div>
+
+<script>
+  const colores = ['var(--rosa-1)', 'var(--rosa-2)', 'var(--rosa-3)', 'var(--rosa-4)'];
+  let colorIndex = 0;
+
+  const horas = [];
+  for (let h = 8; h <= 22; h++) {
+    horas.push(`${h.toString().padStart(2,'0')}:00`);
+    horas.push(`${h.toString().padStart(2,'0')}:30`);
+  }
+
+  const tabla = document.getElementById('horario');
+
+  horas.forEach(hora => {
+    const fila = document.createElement('tr');
+    fila.innerHTML = `<td>${hora}</td><td></td><td></td><td></td><td></td><td></td>`;
+    tabla.appendChild(fila);
+  });
+
+  function timeToIndex(time) {
+    const [h, m] = time.split(':').map(Number);
+    return (h - 8) * 2 + (m === 30 ? 1 : 0);
+  }
+
+  function agregarMateria() {
+    const materia = document.getElementById('materia').value;
+    const inicio = document.getElementById('inicio').value;
+    const fin = document.getElementById('fin').value;
+    const profe = document.getElementById('profe').value;
+    const modalidad = document.getElementById('modalidad').value;
+    const diasSelect = document.getElementById('dias');
+
+    const dias = Array.from(diasSelect.selectedOptions).map(o => Number(o.value));
+
+    const filaInicio = timeToIndex(inicio) + 1;
+    const filaFin = timeToIndex(fin) + 1;
+    const altura = (filaFin - filaInicio) * 30;
+
+    const color = colores[colorIndex % colores.length];
+    colorIndex++;
+
+    dias.forEach(dia => {
+      const celda = tabla.rows[filaInicio].cells[dia];
+      const bloque = document.createElement('div');
+      bloque.className = 'bloque';
+      bloque.style.height = altura + 'px';
+      bloque.style.backgroundColor = color;
+      bloque.innerHTML = `<strong>${materia}</strong><br>${profe}<br>${modalidad}`;
+      celda.appendChild(bloque);
+    });
+  }
+  function haySuperposicion(dia, inicio, fin) {
+    const filaInicio = timeToIndex(inicio) + 1;
+    const filaFin = timeToIndex(fin) + 1;
+    for (let i = filaInicio; i < filaFin; i++) {
+      if (tabla.rows[i].cells[dia].children.length > 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function agregarMateria() {
+    const materia = document.getElementById('materia').value;
+    const inicio = document.getElementById('inicio').value;
+    const fin = document.getElementById('fin').value;
+    const profe = document.getElementById('profe').value;
+    const modalidad = document.getElementById('modalidad').value;
+    const diasSelect = document.getElementById('dias');
+    const dias = Array.from(diasSelect.selectedOptions).map(o => Number(o.value));
+
+    const filaInicio = timeToIndex(inicio) + 1;
+    const filaFin = timeToIndex(fin) + 1;
+    const altura = (filaFin - filaInicio) * 30;
+
+    const color = colores[colorIndex % colores.length];
+    colorIndex++;
+
+    dias.forEach(dia => {
+      const solapa = haySuperposicion(dia, inicio, fin);
+      const celda = tabla.rows[filaInicio].cells[dia];
+      const bloque = document.createElement('div');
+      bloque.className = 'bloque';
+      bloque.style.height = altura + 'px';
+      bloque.style.backgroundColor = solapa ? '#e63946' : color;
+      bloque.innerHTML = `<strong>${materia}</strong><br>${profe}<br>${modalidad}<br><small>(click para borrar)</small>`;
+      bloque.onclick = () => bloque.remove();
+      celda.appendChild(bloque);
+    });
+  }
+</script>
+
+</body>
+</html>
