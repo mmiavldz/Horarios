@@ -12,6 +12,7 @@
       --fondo: #fde2e4;
       --blanco: #ffffff;
       --gris: #555;
+      --alerta: #e63946;
     }
 
     body {
@@ -26,9 +27,16 @@
       color: var(--rosa-1);
     }
 
+    .mensaje {
+      text-align: center;
+      margin-bottom: 15px;
+      font-style: italic;
+      color: var(--gris);
+    }
+
     .contenedor {
       display: grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: 340px 1fr;
       gap: 20px;
     }
 
@@ -52,8 +60,22 @@
       border: 1px solid #ccc;
     }
 
+    .dias {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .dias label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.9em;
+    }
+
     button {
-      margin-top: 15px;
+      margin-top: 12px;
       background-color: var(--rosa-2);
       border: none;
       cursor: pointer;
@@ -62,6 +84,12 @@
     button:hover {
       background-color: var(--rosa-1);
       color: white;
+    }
+
+    .opciones {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
     }
 
     table {
@@ -91,18 +119,18 @@
       left: 2px;
       right: 2px;
       top: 2px;
-      bottom: 2px;
-      color: white;
       border-radius: 8px;
       padding: 4px;
-      font-size: 0.8em;
-      overflow: hidden;
+      font-size: 0.75em;
+      color: white;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
 
 <h1>🌸 Planificador de Horarios 🌸</h1>
+<div class="mensaje" id="mensaje"></div>
 
 <div class="contenedor">
 
@@ -112,19 +140,19 @@
     <label>Materia</label>
     <input id="materia" />
 
-    <label>Días (Ctrl para elegir varios)</label>
-    <select id="dias" multiple>
-      <option value="1">Lunes</option>
-      <option value="2">Martes</option>
-      <option value="3">Miércoles</option>
-      <option value="4">Jueves</option>
-      <option value="5">Viernes</option>
-    </select>
+    <label>Días</label>
+    <div class="dias">
+      <label><input type="checkbox" value="1">Lun</label>
+      <label><input type="checkbox" value="2">Mar</label>
+      <label><input type="checkbox" value="3">Mié</label>
+      <label><input type="checkbox" value="4">Jue</label>
+      <label><input type="checkbox" value="5">Vie</label>
+    </div>
 
-    <label>Hora inicio (24h)</label>
+    <label>Hora inicio</label>
     <input type="time" id="inicio" />
 
-    <label>Hora fin (24h)</label>
+    <label>Hora fin</label>
     <input type="time" id="fin" />
 
     <label>Profesor/a</label>
@@ -137,7 +165,17 @@
       <option>Mixta</option>
     </select>
 
+    <div class="opciones">
+      <button onclick="setOpcion('A')">Opción A</button>
+      <button onclick="setOpcion('B')">Opción B</button>
+      <button onclick="setOpcion('C')">Opción C</button>
+      <button onclick="setOpcion('D')">Opción D</button>
+    </div>
+
     <button onclick="agregarMateria()">Agregar</button>
+    <button onclick="exportarImagen()">Exportar imagen</button>
+    <button onclick="exportarPDF()">Exportar PDF</button>
+    <button onclick="modoAlgoritmo()">Modo algoritmo 🤖</button>
   </div>
 
   <table id="horario">
@@ -154,93 +192,92 @@
 </div>
 
 <script>
-  const colores = ['var(--rosa-1)', 'var(--rosa-2)', 'var(--rosa-3)', 'var(--rosa-4)'];
+  const frases = [
+    'Tú puedes, Mia ✨',
+    'Un pasito más y lo lográs 💕',
+    'Orgullosa de vos, seguí así 🌸',
+    'Esto también es aprender 💪',
+    'Programar es prueba y error, y lo estás haciendo genial 💖'
+  ];
+
+  document.getElementById('mensaje').innerText = frases[Math.floor(Math.random()*frases.length)];
+
+  const colores = ['var(--rosa-1)','var(--rosa-2)','var(--rosa-3)','var(--rosa-4)'];
   let colorIndex = 0;
+  let opcionActual = 'A';
+
+  const data = JSON.parse(localStorage.getItem('horarios')) || {A:[],B:[],C:[],D:[]};
 
   const horas = [];
-  for (let h = 8; h <= 22; h++) {
+  for (let h=8; h<=22; h++){
     horas.push(`${h.toString().padStart(2,'0')}:00`);
     horas.push(`${h.toString().padStart(2,'0')}:30`);
   }
 
   const tabla = document.getElementById('horario');
-
-  horas.forEach(hora => {
-    const fila = document.createElement('tr');
-    fila.innerHTML = `<td>${hora}</td><td></td><td></td><td></td><td></td><td></td>`;
+  horas.forEach(h=>{
+    const fila=document.createElement('tr');
+    fila.innerHTML=`<td>${h}</td><td></td><td></td><td></td><td></td><td></td>`;
     tabla.appendChild(fila);
   });
 
-  function timeToIndex(time) {
-    const [h, m] = time.split(':').map(Number);
-    return (h - 8) * 2 + (m === 30 ? 1 : 0);
+  function timeToIndex(t){
+    const [h,m]=t.split(':').map(Number);
+    return (h-8)*2+(m===30?1:0);
   }
 
-  function agregarMateria() {
-    const materia = document.getElementById('materia').value;
-    const inicio = document.getElementById('inicio').value;
-    const fin = document.getElementById('fin').value;
-    const profe = document.getElementById('profe').value;
-    const modalidad = document.getElementById('modalidad').value;
-    const diasSelect = document.getElementById('dias');
+  function setOpcion(op){
+    opcionActual=op;
+    limpiarHorario();
+    data[op].forEach(m=>dibujar(m));
+  }
 
-    const dias = Array.from(diasSelect.selectedOptions).map(o => Number(o.value));
+  function limpiarHorario(){
+    document.querySelectorAll('.bloque').forEach(b=>b.remove());
+  }
 
-    const filaInicio = timeToIndex(inicio) + 1;
-    const filaFin = timeToIndex(fin) + 1;
-    const altura = (filaFin - filaInicio) * 30;
+  function agregarMateria(){
+    const dias=[...document.querySelectorAll('.dias input:checked')].map(d=>Number(d.value));
+    const m={
+      materia: materia.value,
+      inicio: inicio.value,
+      fin: fin.value,
+      profe: profe.value,
+      modalidad: modalidad.value,
+      dias,
+      color: colores[colorIndex++%colores.length]
+    };
+    data[opcionActual].push(m);
+    localStorage.setItem('horarios',JSON.stringify(data));
+    dibujar(m);
+  }
 
-    const color = colores[colorIndex % colores.length];
-    colorIndex++;
-
-    dias.forEach(dia => {
-      const celda = tabla.rows[filaInicio].cells[dia];
-      const bloque = document.createElement('div');
-      bloque.className = 'bloque';
-      bloque.style.height = altura + 'px';
-      bloque.style.backgroundColor = color;
-      bloque.innerHTML = `<strong>${materia}</strong><br>${profe}<br>${modalidad}`;
-      celda.appendChild(bloque);
+  function dibujar(m){
+    const fi=timeToIndex(m.inicio)+1;
+    const ff=timeToIndex(m.fin)+1;
+    const altura=(ff-fi)*30;
+    m.dias.forEach(d=>{
+      const c=tabla.rows[fi].cells[d];
+      const b=document.createElement('div');
+      b.className='bloque';
+      b.style.height=altura+'px';
+      b.style.backgroundColor=m.color;
+      b.innerHTML=`<strong>${m.materia}</strong><br>${m.profe}<br>${m.modalidad}`;
+      b.onclick=()=>{b.remove();};
+      c.appendChild(b);
     });
   }
-  function haySuperposicion(dia, inicio, fin) {
-    const filaInicio = timeToIndex(inicio) + 1;
-    const filaFin = timeToIndex(fin) + 1;
-    for (let i = filaInicio; i < filaFin; i++) {
-      if (tabla.rows[i].cells[dia].children.length > 0) {
-        return true;
-      }
-    }
-    return false;
+
+  function modoAlgoritmo(){
+    alert('🤖 Próximamente: selección automática de combinaciones óptimas');
   }
 
-  function agregarMateria() {
-    const materia = document.getElementById('materia').value;
-    const inicio = document.getElementById('inicio').value;
-    const fin = document.getElementById('fin').value;
-    const profe = document.getElementById('profe').value;
-    const modalidad = document.getElementById('modalidad').value;
-    const diasSelect = document.getElementById('dias');
-    const dias = Array.from(diasSelect.selectedOptions).map(o => Number(o.value));
+  function exportarImagen(){
+    alert('📸 Exportar imagen: usar librería html2canvas (siguiente paso si querés)');
+  }
 
-    const filaInicio = timeToIndex(inicio) + 1;
-    const filaFin = timeToIndex(fin) + 1;
-    const altura = (filaFin - filaInicio) * 30;
-
-    const color = colores[colorIndex % colores.length];
-    colorIndex++;
-
-    dias.forEach(dia => {
-      const solapa = haySuperposicion(dia, inicio, fin);
-      const celda = tabla.rows[filaInicio].cells[dia];
-      const bloque = document.createElement('div');
-      bloque.className = 'bloque';
-      bloque.style.height = altura + 'px';
-      bloque.style.backgroundColor = solapa ? '#e63946' : color;
-      bloque.innerHTML = `<strong>${materia}</strong><br>${profe}<br>${modalidad}<br><small>(click para borrar)</small>`;
-      bloque.onclick = () => bloque.remove();
-      celda.appendChild(bloque);
-    });
+  function exportarPDF(){
+    alert('📄 Exportar PDF: usar jsPDF + html2canvas');
   }
 </script>
 
