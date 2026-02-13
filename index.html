@@ -3,283 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <title>Planificador de Horarios</title>
-  <style>
-    :root {
-      --rosa-1: #f2849e;
-      --rosa-2: #f6a6b2;
-      --rosa-3: #f9c5d1;
-      --rosa-4: #fbcfe8;
-      --fondo: #fde2e4;
-      --blanco: #ffffff;
-      --gris: #555;
-      --alerta: #e63946;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      background-color: var(--fondo);
-      margin: 0;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-      color: var(--rosa-1);
-    }
-
-    .mensaje {
-      text-align: center;
-      margin-bottom: 15px;
-      font-style: italic;
-      color: var(--gris);
-    }
-
-    .contenedor {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 20px;
-    }
-
-    .formulario {
-      background: var(--blanco);
-      padding: 15px;
-      border-radius: 12px;
-    }
-
-    label {
-      display: block;
-      margin-top: 10px;
-      color: var(--gris);
-    }
-
-    input, select, button {
-      width: 100%;
-      padding: 6px;
-      margin-top: 4px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
-    .dias {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 5px;
-      margin-top: 5px;
-    }
-
-    .dias label {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 0.9em;
-    }
-
-    button {
-      margin-top: 12px;
-      background-color: var(--rosa-2);
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: var(--rosa-1);
-      color: white;
-    }
-
-    .opciones {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--blanco);
-      border-radius: 12px;
-      overflow: hidden;
-      table-layout: fixed;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      text-align: center;
-      padding: 4px;
-      height: 30px;
-      font-size: 0.85em;
-      position: relative;
-    }
-
-    th {
-      background-color: var(--rosa-3);
-    }
-
-    .bloque {
-      position: absolute;
-      left: 2px;
-      right: 2px;
-      top: 2px;
-      border-radius: 8px;
-      padding: 4px;
-      font-size: 0.75em;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
+  <h1>🌸 Planificador de Horarios 🌸</h1>
+  <div id="mensaje" class="mensaje"></div>
 
-<h1>🌸 Planificador de Horarios 🌸</h1>
-<div class="mensaje" id="mensaje"></div>
+  <div class="contenedor">
+    <div class="formulario">
+      <label>Materia</label><input id="materia" />
 
-<div class="contenedor">
+      <label>Días</label>
+      <input id="diasInput" readonly placeholder="Seleccionar días" />
 
-  <div class="formulario">
-    <h3>Cargar materia</h3>
+      <label>Hora inicio</label><input type="time" id="inicio" />
+      <label>Hora fin</label><input type="time" id="fin" />
 
-    <label>Materia</label>
-    <input id="materia" />
+      <label>Profesor/a</label><input id="profe" />
+      <label>Modalidad</label><input id="modalidad" />
 
-    <label>Días</label>
-    <div class="dias">
-      <label><input type="checkbox" value="1">Lun</label>
-      <label><input type="checkbox" value="2">Mar</label>
-      <label><input type="checkbox" value="3">Mié</label>
-      <label><input type="checkbox" value="4">Jue</label>
-      <label><input type="checkbox" value="5">Vie</label>
+      <div class="opciones">
+        <button onclick="setOpcion('A')">A</button>
+        <button onclick="setOpcion('B')">B</button>
+        <button onclick="setOpcion('C')">C</button>
+        <button onclick="setOpcion('D')">D</button>
+      </div>
+
+      <button onclick="agregarMateria()">Agregar</button>
+      <button onclick="modoAlgoritmo()">Modo algoritmo 🤖</button>
+      <button onclick="exportarPDF()">Exportar PDF</button>
     </div>
 
-    <label>Hora inicio</label>
-    <input type="time" id="inicio" />
-
-    <label>Hora fin</label>
-    <input type="time" id="fin" />
-
-    <label>Profesor/a</label>
-    <input id="profe" />
-
-    <label>Modalidad</label>
-    <select id="modalidad">
-      <option>Presencial</option>
-      <option>Virtual</option>
-      <option>Mixta</option>
-    </select>
-
-    <div class="opciones">
-      <button onclick="setOpcion('A')">Opción A</button>
-      <button onclick="setOpcion('B')">Opción B</button>
-      <button onclick="setOpcion('C')">Opción C</button>
-      <button onclick="setOpcion('D')">Opción D</button>
-    </div>
-
-    <button onclick="agregarMateria()">Agregar</button>
-    <button onclick="exportarImagen()">Exportar imagen</button>
-    <button onclick="exportarPDF()">Exportar PDF</button>
-    <button onclick="modoAlgoritmo()">Modo algoritmo 🤖</button>
+    <table id="horario">
+      <tr><th>Hora</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th></tr>
+    </table>
   </div>
 
-  <table id="horario">
-    <tr>
-      <th>Hora</th>
-      <th>Lunes</th>
-      <th>Martes</th>
-      <th>Miércoles</th>
-      <th>Jueves</th>
-      <th>Viernes</th>
-    </tr>
-  </table>
+  <div id="popupDias" class="popup"></div>
 
-</div>
-
-<script>
-  const frases = [
-    'Tú puedes, Mia ✨',
-    'Un pasito más y lo lográs 💕',
-    'Orgullosa de vos, seguí así 🌸',
-    'Esto también es aprender 💪',
-    'Programar es prueba y error, y lo estás haciendo genial 💖'
-  ];
-
-  document.getElementById('mensaje').innerText = frases[Math.floor(Math.random()*frases.length)];
-
-  const colores = ['var(--rosa-1)','var(--rosa-2)','var(--rosa-3)','var(--rosa-4)'];
-  let colorIndex = 0;
-  let opcionActual = 'A';
-
-  const data = JSON.parse(localStorage.getItem('horarios')) || {A:[],B:[],C:[],D:[]};
-
-  const horas = [];
-  for (let h=8; h<=22; h++){
-    horas.push(`${h.toString().padStart(2,'0')}:00`);
-    horas.push(`${h.toString().padStart(2,'0')}:30`);
-  }
-
-  const tabla = document.getElementById('horario');
-  horas.forEach(h=>{
-    const fila=document.createElement('tr');
-    fila.innerHTML=`<td>${h}</td><td></td><td></td><td></td><td></td><td></td>`;
-    tabla.appendChild(fila);
-  });
-
-  function timeToIndex(t){
-    const [h,m]=t.split(':').map(Number);
-    return (h-8)*2+(m===30?1:0);
-  }
-
-  function setOpcion(op){
-    opcionActual=op;
-    limpiarHorario();
-    data[op].forEach(m=>dibujar(m));
-  }
-
-  function limpiarHorario(){
-    document.querySelectorAll('.bloque').forEach(b=>b.remove());
-  }
-
-  function agregarMateria(){
-    const dias=[...document.querySelectorAll('.dias input:checked')].map(d=>Number(d.value));
-    const m={
-      materia: materia.value,
-      inicio: inicio.value,
-      fin: fin.value,
-      profe: profe.value,
-      modalidad: modalidad.value,
-      dias,
-      color: colores[colorIndex++%colores.length]
-    };
-    data[opcionActual].push(m);
-    localStorage.setItem('horarios',JSON.stringify(data));
-    dibujar(m);
-  }
-
-  function dibujar(m){
-    const fi=timeToIndex(m.inicio)+1;
-    const ff=timeToIndex(m.fin)+1;
-    const altura=(ff-fi)*30;
-    m.dias.forEach(d=>{
-      const c=tabla.rows[fi].cells[d];
-      const b=document.createElement('div');
-      b.className='bloque';
-      b.style.height=altura+'px';
-      b.style.backgroundColor=m.color;
-      b.innerHTML=`<strong>${m.materia}</strong><br>${m.profe}<br>${m.modalidad}`;
-      b.onclick=()=>{b.remove();};
-      c.appendChild(b);
-    });
-  }
-
-  function modoAlgoritmo(){
-    alert('🤖 Próximamente: selección automática de combinaciones óptimas');
-  }
-
-  function exportarImagen(){
-    alert('📸 Exportar imagen: usar librería html2canvas (siguiente paso si querés)');
-  }
-
-  function exportarPDF(){
-    alert('📄 Exportar PDF: usar jsPDF + html2canvas');
-  }
-</script>
-
+  <script src="algoritmo.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>
